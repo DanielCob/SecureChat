@@ -45,11 +45,18 @@ def _receiver(sock: socket.socket, cipher: SessionCipher, peer_name: str,
 def _send(sock: socket.socket, cipher: SessionCipher, text: str, tamper: bool = False) -> None:
     ui.local_plaintext(text)
     blob = cipher.encrypt(text.encode("utf-8"))
+    tampered_idx = None
     if tamper:
         i = NONCE_LEN  # primer byte del ciphertext
-        blob = blob[:i] + bytes([blob[i] ^ 0x01]) + blob[i + 1:]
-        ui.system(f"[prueba] se alteró 1 byte del ciphertext (posición {i}) antes de enviarlo")
-    ui.sent_ciphertext(blob)
+        original_byte = blob[i]
+        tampered_byte = original_byte ^ 0x01
+        blob = blob[:i] + bytes([tampered_byte]) + blob[i + 1:]
+        tampered_idx = i
+        ui.system(
+            f"[prueba] se alteró 1 byte del ciphertext: "
+            f"byte original = 0x{original_byte:02x} -> byte alterado = 0x{tampered_byte:02x}"
+        )
+    ui.sent_ciphertext(blob, tampered_idx=tampered_idx)
     protocol.send_frame(sock, protocol.DATA, blob)
 
 

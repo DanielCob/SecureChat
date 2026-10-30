@@ -46,12 +46,38 @@ def reprompt() -> None:
         sys.stdout.flush()
 
 
-def _parts(blob: bytes) -> str:
+def _highlight_hex(data: bytes, highlight_idx: int | None, base_color_code: str) -> str:
+    """Muestra hex resaltando en rojo brillante/subrayado el byte en highlight_idx."""
+    if highlight_idx is None or not (0 <= highlight_idx < len(data)):
+        return data.hex()
+    if not _color:
+        return data.hex()
+    
+    parts = []
+    for idx, b in enumerate(data):
+        b_hex = f"{b:02x}"
+        if idx == highlight_idx:
+            # Resaltar en rojo intenso subrayado o negrita y luego volver al color base
+            parts.append(f"\033[1;31;4m{b_hex}\033[0m\033[{base_color_code}m")
+        else:
+            parts.append(b_hex)
+    return "".join(parts)
+
+
+def _parts(blob: bytes, base_color_code: str = _YELLOW, tampered_blob_idx: int | None = None) -> str:
     try:
         nonce, ct, tag = split_blob(blob)
     except ValueError:
-        return blob.hex()
-    return (f"{blob.hex()}\n    nonce={nonce.hex()}\n    ciphertext={ct.hex()}\n    tag={tag.hex()}")
+        return _highlight_hex(blob, tampered_blob_idx, base_color_code)
+
+    tampered_ct_idx = None
+    if tampered_blob_idx is not None and len(nonce) <= tampered_blob_idx < len(nonce) + len(ct):
+        tampered_ct_idx = tampered_blob_idx - len(nonce)
+
+    blob_hex = _highlight_hex(blob, tampered_blob_idx, base_color_code)
+    ct_hex = _highlight_hex(ct, tampered_ct_idx, base_color_code)
+
+    return (f"{blob_hex}\n    nonce={nonce.hex()}\n    ciphertext={ct_hex}\n    tag={tag.hex()}")
 
 
 def system(text: str) -> None:
@@ -62,12 +88,12 @@ def local_plaintext(text: str) -> None:
     _emit(_GREEN, f"[TU] {text}")
 
 
-def sent_ciphertext(blob: bytes) -> None:
-    _emit(_YELLOW, f"[ENVIADO ->] {_parts(blob)}")
+def sent_ciphertext(blob: bytes, tampered_idx: int | None = None) -> None:
+    _emit(_YELLOW, f"[ENVIADO ->] {_parts(blob, base_color_code=_YELLOW, tampered_blob_idx=tampered_idx)}")
 
 
 def received_ciphertext(blob: bytes) -> None:
-    _emit(_MAGENTA, f"[<- RECIBIDO] {_parts(blob)}")
+    _emit(_MAGENTA, f"[<- RECIBIDO] {_parts(blob, base_color_code=_MAGENTA)}")
 
 
 def recovered_plaintext(peer_name: str, text: str) -> None:
