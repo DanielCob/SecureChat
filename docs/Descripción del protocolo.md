@@ -1,6 +1,0 @@
-- **Descripción General:** Protocolo de mensajería segura de extremo a extremo basado en criptografía híbrida sobre TCP/IP.
-- **Algoritmo Asimétrico y Tamaños de Clave:** RSA de 2048 bits con padding RSA-OAEP (SHA-256). Su propósito es proteger de forma confidencial la clave simétrica de sesión durante el _handshake_.
-- **Algoritmo Simétrico y Tamaños de Clave:** AES-256-GCM (clave de 256 bits generada dinámicamente, _nonce_ de 96 bits y _auth tag_ de 128 bits). Proporciona confidencialidad, integridad y autenticidad a alta velocidad durante el envió de mensajes de ambos remitentes.
-- **Estructura General de los Mensajes:**
-    - **Capa de Red:** Tramas binarias con una cabecera fija de 5 bytes: `Longitud (4B, uint32) || Tipo (1B, uint8) || Payload (N Bytes)`, abarcando tipos de control y datos (`HELLO`, `PUBKEY`, `SESSION_KEY`, `READY`, `DATA`, `BYE`).
-    - **Payload Protegido (DATA/READY):** Estructurado internamente como: `Nonce (12B: 4B de dirección + 8B de contador incremental) || Ciphertext || Auth Tag (16B)`, previniendo ataques de repetición y alteraciones de datos.
